@@ -2,7 +2,8 @@ import pytest
 from datetime import datetime
 from galaxy.api.errors import AuthenticationRequired, UnknownBackendResponse
 from psn_store import AccountUserInfo
-from tests.test_data import SUBSCRIPTION_GAMES, BACKEND_STORE_FREEPSPLUS_CONTAINER, USER_ACCOUNTS_DATA
+from tests.test_data import PSPLUS_GAMES, BACKEND_STORE_FREEPSPLUS_CONTAINER, USER_ACCOUNTS_DATA, \
+                PSNOW_GAMES, BACKEND_PSNOW_GAMES
 
 
 @pytest.fixture()
@@ -42,7 +43,7 @@ async def test_get_user_account_info(
 
 
 @pytest.mark.asyncio
-async def test_get_subscription_games(
+async def test_get_psplus_games(
     http_get,
     user_account_info,
     authenticated_psn_client,
@@ -50,9 +51,20 @@ async def test_get_subscription_games(
 ):
     http_get.return_value = BACKEND_STORE_FREEPSPLUS_CONTAINER
     acc_info = user_account_info
-    assert SUBSCRIPTION_GAMES == await authenticated_psn_client.get_subscription_games(acc_info)
+    assert PSPLUS_GAMES == await authenticated_psn_client.get_psplus_games(acc_info)
     http_get.assert_called_once()
 
+@pytest.mark.asyncio
+async def test_get_psnow_games(
+    http_get,
+    user_account_info,
+    authenticated_psn_client,
+    mocker
+):
+    http_get.return_value = BACKEND_PSNOW_GAMES
+    acc_info = user_account_info
+    assert PSNOW_GAMES == await authenticated_psn_client.get_psnow_games(acc_info)
+    http_get.assert_called_once()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("backend_response", [
@@ -62,7 +74,7 @@ async def test_get_subscription_games(
     {"data": {"included": [{"id": "EDIN_CN242242_00", "type": "game", "attributes": "bad data"}]}},
     {"data": {"included": [{"id": "EDIN_CN242242_00", "attributes": {"name": "BioShock Collection"}}]}},
 ])
-async def test_get_subscription_games_bad_format(
+async def test_get_psplus_games_bad_format(
     http_get,
     user_account_info,
     authenticated_psn_client,
@@ -72,5 +84,5 @@ async def test_get_subscription_games_bad_format(
     acc_info = user_account_info
 
     with pytest.raises(UnknownBackendResponse):
-        await authenticated_psn_client.get_subscription_games(acc_info)
+        await authenticated_psn_client.get_psplus_games(acc_info)
     http_get.assert_called_once()

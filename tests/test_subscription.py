@@ -1,5 +1,6 @@
 import pytest
 from galaxy.api.types import Subscription
+from galaxy.api.consts import SubscriptionDiscovery
 from galaxy.api.errors import UnknownBackendResponse
 
 
@@ -12,11 +13,14 @@ async def test_get_psplus_status(
     http_get,
     authenticated_plugin,
     psplus_name,
+    psnow_name,
     backend_response,
     status
 ):
     http_get.return_value = backend_response
-    assert [Subscription(psplus_name, end_time=None, owned=status)] == \
+    assert [Subscription(psplus_name, end_time=None, owned=status),
+            Subscription(psnow_name, end_time=None, owned=None, \
+                subscription_discovery=SubscriptionDiscovery.USER_ENABLED)] == \
         await authenticated_plugin.get_subscriptions()
 
 

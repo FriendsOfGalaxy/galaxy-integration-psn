@@ -15,6 +15,8 @@ class PSNFreePlusStore:
     SESSION = BASE_URL + 'kamaji/api/valkyrie_storefront/00_09_000/user/session'
     SUBSCRIPTION_DETAILS = BASE_URL + 'kamaji/api/valkyrie_storefront/00_09_000/gateway/store/v1/users/me/subscription/IP9102-NPIA90006_00'
 
+    PSPLUS_URL = "https://browse.prod.gaikai.com/apollo1/v1/np/{country}/{language}"
+
     PSPLUS_FREEGAMES_REGION_STORE = {
         'SCEA': 'STORE-MSF77008-PSPLUSFREEGAMES',
         'SCEE': 'STORE-MSF75508-PLUSINSTANTGAME',
@@ -34,6 +36,11 @@ class PSNFreePlusStore:
     def games_container_url(self):
         return self.GAMES_CONTAINTER_URL.format(
             language=self.language, country=self.country, age=self.age, id=self.id)
+
+    @property
+    def psnow_games_url(self):
+        return self.PSPLUS_URL.format(
+            language=self.language, country=self.country)
 
     async def get_subscription_info(self):
         """This provides for information about user subscription data such as 'date_end'

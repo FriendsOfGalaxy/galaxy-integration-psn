@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from datetime import datetime, timezone
 from functools import partial
 from typing import Dict, List, NewType, Tuple
@@ -52,6 +53,9 @@ ACCOUNTS_URL = "https://accounts.api.playstation.com/api/v1/accounts/{user_id}"
 
 DEFAULT_LIMIT = 100
 MAX_TITLE_IDS_PER_REQUEST = 5
+
+PLAYSTATION_PLUS = 'PlayStation PLUS'
+PLAYSTATION_NOW = 'PlayStation Now'
 
 CommunicationId = NewType("CommunicationId", str)
 TitleId = NewType("TitleId", str)
@@ -287,7 +291,8 @@ class PSNClient:
 
         return await self.fetch_data(account_user_parser, ACCOUNTS_URL.format(user_id='me'), silent=True)
 
-    async def get_subscription_games(self, account_info: AccountUserInfo) -> List[SubscriptionGame]:
+    async def get_psplus_games(self, account_info: AccountUserInfo) -> List[SubscriptionGame]:
+        logging.debug("Getting PSPlus Games")
         def games_parser(data):
             return [
                 SubscriptionGame(
@@ -300,3 +305,20 @@ class PSNClient:
 
         store = PSNFreePlusStore(self._http_client, account_info)
         return await self.fetch_data(games_parser, store.games_container_url)
+
+    async def get_psnow_games(self, account_info: AccountUserInfo) -> List[SubscriptionGame]:
+        logging.debug("Getting PSNow Games")
+        category_pattern = re.compile("^[A-Za-z0-9](?: - [A-Za-z0-9])?$")
+        def games_parser(data):
+            return [
+                SubscriptionGame(
+                    game_id=game['id'].split('-')[1],
+                    game_title=game['name']
+                )
+                for category in data['categories']
+                if category_pattern.match(category['name'])
+                for game in category['games']
+            ]
+
+        store = PSNFreePlusStore(self._http_client, account_info)
+        return await self.fetch_data(games_parser, store.psnow_games_url)

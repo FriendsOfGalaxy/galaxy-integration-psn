@@ -49,6 +49,9 @@ def user_profile_psplus(psplus_active_status):
 def psplus_name():
     return "PlayStation PLUS"
 
+@pytest.fixture()
+def psnow_name():
+    return "PlayStation Now"
 
 @pytest.fixture()
 def http_get(mocker):

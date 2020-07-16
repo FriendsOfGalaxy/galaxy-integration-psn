@@ -223,11 +223,89 @@ USER_ACCOUNTS_DATA = {
 }
 
 
-SUBSCRIPTION_GAMES = [
+PSPLUS_GAMES = [
     SubscriptionGame(game_title='BioShock: The Collection', game_id='CUSA03979_00'),
     SubscriptionGame(game_title='The Sims™ 4', game_id='CUSA09209_00'),
     SubscriptionGame(game_title='Firewall Zero Hour™', game_id='CUSA09831_00')
 ]
+
+PSNOW_GAMES = [
+    SubscriptionGame(game_title='ABZÛ', game_id='CUSA03349_00'),
+    SubscriptionGame(game_title='ADR1FT', game_id='CUSA02572_00'),
+    SubscriptionGame(game_title='Back to Bed', game_id='CUSA02537_00'),
+    SubscriptionGame(game_title='Watch Dogs 2', game_id='CUSA04459_00')
+]
+
+BACKEND_PSNOW_GAMES = {
+	"id": "STORE-MSF192018-APOLLOROOT",
+	"timestamp": 1594137933000,
+	"revision": 1072,
+	"categories": [{
+		"id": "STORE-MSF192018-APOLLOTOP20",
+		"timestamp": 1594137934000,
+		"revision": 321,
+		"name": "What's Hot",
+		"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/STORE-MSF192018-APOLLOTOP20/1594137934?start=0&size=300&gkb=1&gkb2=1",
+		"games": [{
+			"id": "UP2002-CUSA01163_00-ROCKETLEAGUENA01",
+			"timestamp": 1594600184000,
+			"revision": 110,
+			"name": "Rocket League®",
+			"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/UP2002-CUSA01163_00-ROCKETLEAGUENA01/1594600184"
+		}, {
+			"id": "UP0001-CUSA01800_00-RAINBOWSIXSIEGE0",
+			"timestamp": 1594407661000,
+			"revision": 54,
+			"name": "TOM CLANCY’S RAINBOW SIX® SIEGE",
+			"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/UP0001-CUSA01800_00-RAINBOWSIXSIEGE0/1594407661"
+		}]
+	}, {
+		"id": "STORE-MSF192018-APOLLOA",
+		"timestamp": 1591117167000,
+		"revision": 154,
+		"name": "A",
+		"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/STORE-MSF192018-APOLLOA/1591117167?start=0&size=300&gkb=1&gkb2=1",
+		"games": [{
+			"id": "UP4040-CUSA03349_00-ABZUGAME00000000",
+			"timestamp": 1594282917000,
+			"revision": 17,
+			"name": "ABZÛ",
+			"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/UP4040-CUSA03349_00-ABZUGAME00000000/1594282917"
+		}, {
+			"id": "UP4040-CUSA02572_00-ADR1FTGAME000001",
+			"timestamp": 1594282914000,
+			"revision": 13,
+			"name": "ADR1FT",
+			"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/UP4040-CUSA02572_00-ADR1FTGAME000001/1594282914"
+		}]
+	}, {
+		"id": "STORE-MSF192018-APOLLOB",
+		"timestamp": 1591241188000,
+		"revision": 163,
+		"name": "B",
+		"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/STORE-MSF192018-APOLLOB/1591241188?start=0&size=300&gkb=1&gkb2=1",
+		"games": [{
+			"id": "UP2135-CUSA02537_00-BACKTOBEDLOOTPS4",
+			"timestamp": 1594138014000,
+			"revision": 5,
+			"name": "Back to Bed",
+			"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/UP2135-CUSA02537_00-BACKTOBEDLOOTPS4/1594138014"
+		}]
+	}, {
+		"id": "STORE-MSF192018-APOLLOW",
+		"timestamp": 1594137934000,
+		"revision": 121,
+		"name": "W - Z",
+		"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/STORE-MSF192018-APOLLOW/1594137934?start=0&size=300&gkb=1&gkb2=1",
+		"games": [{
+			"id": "UP0001-CUSA04459_00-WD2FULLGAME00000",
+			"timestamp": 1594601462000,
+			"revision": 37,
+			"name": "Watch Dogs 2",
+			"url": "https://commerce1.api.np.km.playstation.net/store/api/ps4now/00_09_000/container/US/en/999/UP0001-CUSA04459_00-WD2FULLGAME00000/1594601462"
+		}]
+    }]
+}
 
 BACKEND_STORE_FREEPSPLUS_CONTAINER = {
     "data": {

@@ -1,2 +1,2 @@
-galaxy.plugin.api==0.64
+galaxy.plugin.api==0.66
 certifi==2019.3.9

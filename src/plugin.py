@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from galaxy.api.plugin import Plugin, create_and_run_plugin
 from galaxy.api.types import Authentication, NextStep, Achievement, UserPresence, PresenceState, SubscriptionGame, Subscription
-from galaxy.api.consts import Platform
+from galaxy.api.consts import Platform, SubscriptionDiscovery
 from galaxy.api.errors import ApplicationError, InvalidCredentials, UnknownError
 from galaxy.api.jsonrpc import InvalidParams
 
@@ -17,7 +17,8 @@ from cache import Cache
 from http_client import AuthenticatedHttpClient
 from psn_client import (
     CommunicationId, TitleId, TrophyTitles, UnixTimestamp,
-    PSNClient, MAX_TITLE_IDS_PER_REQUEST
+    PSNClient, MAX_TITLE_IDS_PER_REQUEST, PLAYSTATION_PLUS,
+    PLAYSTATION_NOW
 )
 from typing import Dict, List, Set, Iterable, Tuple, Optional, Any, AsyncGenerator
 from version import __version__
@@ -115,11 +116,16 @@ class PSNPlugin(Plugin):
 
     async def get_subscriptions(self) -> List[Subscription]:
         is_plus_active = await self._psn_client.get_psplus_status()
-        return [Subscription(subscription_name="PlayStation PLUS", end_time=None, owned=is_plus_active)]
+        return [Subscription(PLAYSTATION_PLUS, is_plus_active, None),
+            Subscription(PLAYSTATION_NOW, None, None, SubscriptionDiscovery.USER_ENABLED)]
 
     async def get_subscription_games(self, subscription_name: str, context: Any) -> AsyncGenerator[List[SubscriptionGame], None]:
         account_info = await self._psn_client.get_account_info()
-        yield await self._psn_client.get_subscription_games(account_info)
+        if subscription_name == PLAYSTATION_PLUS:
+            yield await self._psn_client.get_psplus_games(account_info)
+        
+        if subscription_name == PLAYSTATION_NOW:
+            yield await self._psn_client.get_psnow_games(account_info)
 
     async def get_owned_games(self):
         async def filter_games(titles):
