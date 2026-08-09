@@ -123,3 +123,31 @@ async def exchange_access_code_for_tokens(http_client, access_code: str) -> Dict
 async def exchange_npsso_for_tokens(http_client, npsso: str) -> Dict[str, Any]:
     access_code = await exchange_npsso_for_access_code(http_client, npsso)
     return await exchange_access_code_for_tokens(http_client, access_code)
+
+
+async def refresh_oauth_tokens(http_client, refresh_token: str) -> Dict[str, Any]:
+    """Trade a refresh token for a fresh access token (expires ~hourly)."""
+    response = await http_client.raw_request(
+        "POST",
+        OAUTH_TOKEN_URL,
+        headers={
+            "Authorization": OAUTH_CLIENT_BASIC,
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        data=urlencode(
+            {
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+                "scope": OAUTH_SCOPE,
+                "token_format": "jwt",
+            }
+        ),
+    )
+    try:
+        body = await response.json()
+    except ValueError:
+        body = {}
+    if response.status >= 400 or "access_token" not in body:
+        logger.warning("OAuth token refresh failed: %s", body)
+        raise InvalidCredentials("Could not refresh PlayStation session")
+    return body

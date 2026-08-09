@@ -56,9 +56,23 @@ PLAYED_GAMES_PAGE_SIZE = 200
 TROPHY_TITLES_PAGE_SIZE = 800
 TROPHY_BATCH_SIZE = 5
 # Below galaxy.http's connector limit (20) so queued requests don't
-# exhaust the 30s total timeout while waiting for a connection.
-TROPHY_FETCH_CONCURRENCY = 10
+# exhaust the 30s total timeout while waiting for a connection; kept low
+# because the HttpClient rate limiter paces requests globally anyway.
+TROPHY_FETCH_CONCURRENCY = 4
 FRIENDS_PAGE_SIZE = 2000
+
+# Galaxy can request the owned-games import several times in quick succession
+# after a reconnect; reuse in-session source fetches for this many seconds.
+LIBRARY_SOURCE_MEMO_TTL = 300.0
+# Store titles with no trophy activity re-check their trophy-set mapping at
+# most this often (seconds); a first unlock bumps lastUpdatedDateTime anyway.
+STORE_TROPHY_NEGATIVE_TTL = 7 * 24 * 3600.0
+# The trophyTitles-for-titles endpoint accepts at most 5 npTitleIds per call.
+STORE_TROPHY_BATCH_SIZE = 5
+# Push fresh game times / trophies to Galaxy this often (seconds). Each poll
+# costs ~2 requests (played list + trophy titles list) plus per-game fetches
+# only for titles Sony reports as changed.
+AUTO_UPDATE_INTERVAL = 600.0
 
 USER_GAMES_API_BASE = "https://m.np.playstation.com/api/gamelist/v2/users"
 TROPHY_API_BASE = "https://m.np.playstation.com/api/trophy"

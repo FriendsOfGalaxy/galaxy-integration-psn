@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+import time
 
 if sys.version_info < (3, 13):
     raise ImportError(
@@ -25,6 +26,7 @@ from galaxy.api.types import (
 from http_client import HttpClient
 from psn.auth import PSNAuthenticator
 from psn.client import PSNClient
+from psn.constants import AUTO_UPDATE_INTERVAL
 from version import __version__
 
 logger = logging.getLogger(__name__)
@@ -40,7 +42,15 @@ class PSNPlugin(Plugin):
             self._psn_client,
             self.store_credentials,
         )
+        self._http_client.set_token_refresher(
+            self._authenticator.refresh_access_token
+        )
         self._owned_games_import: asyncio.Event | None = None
+        self._psn_client.attach_persistent_cache(
+            lambda: self.persistent_cache, self.push_cache
+        )
+        self._auto_update_task: asyncio.Task | None = None
+        self._last_auto_update = time.monotonic()
         logging.getLogger("urllib3").setLevel(logging.FATAL)
 
     async def authenticate(self, stored_credentials=None):
@@ -115,6 +125,7 @@ class PSNPlugin(Plugin):
             ]
         finally:
             self._owned_games_import.set()
+            self._psn_client.flush_cache()
 
     async def prepare_game_times_context(self, game_ids: List[str]) -> Any:
         await self._ensure_authenticated()
@@ -139,6 +150,7 @@ class PSNPlugin(Plugin):
         return await self._psn_client.fetch_unlocked_achievements(game_id, context)
 
     def achievements_import_complete(self):
+        self._psn_client.flush_cache()
         context = getattr(self, "_last_achievements_context", None)
         if context is None:
             return
@@ -158,7 +170,43 @@ class PSNPlugin(Plugin):
             logger.warning("Could not fetch friends list", exc_info=True)
             return []
 
+    def tick(self):
+        if self._auto_update_task is not None and not self._auto_update_task.done():
+            return
+        if time.monotonic() - self._last_auto_update < AUTO_UPDATE_INTERVAL:
+            return
+        self._last_auto_update = time.monotonic()
+        self._auto_update_task = asyncio.create_task(self._auto_update())
+
+    async def _auto_update(self):
+        """Push fresh game times and trophies between Galaxy's full imports."""
+        if not self._http_client._access_token:
+            return
+        try:
+            game_times = await self._psn_client.detect_game_time_updates()
+            for game_time in game_times:
+                self.update_game_time(game_time)
+
+            trophy_updates = await self._psn_client.detect_trophy_updates()
+            for game_id, achievement in trophy_updates:
+                self.unlock_achievement(game_id, achievement)
+
+            if game_times or trophy_updates:
+                logger.info(
+                    "Auto-update pushed %d game times and %d achievements",
+                    len(game_times),
+                    len(trophy_updates),
+                )
+            else:
+                logger.info("Auto-update cycle: no changes")
+            self._psn_client.flush_cache()
+        except Exception:
+            logger.warning("Auto-update cycle failed", exc_info=True)
+
     async def shutdown(self):
+        if self._auto_update_task is not None:
+            self._auto_update_task.cancel()
+        self._psn_client.flush_cache()
         await self._authenticator.stop()
         await self._http_client.close()
 

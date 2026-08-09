@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import parse_qs, unquote, urlparse
@@ -11,11 +13,19 @@ from yarl import URL
 from psn.client import PSNClient
 from psn.constants import NPSSO_AUTH_QUERY_PARAM, NPSSO_COOKIE_URL
 from psn.local_server import LocalAuthServer
-from psn.oauth import exchange_npsso_for_tokens, user_info_from_id_token
+from psn.oauth import (
+    exchange_npsso_for_tokens,
+    refresh_oauth_tokens,
+    user_info_from_id_token,
+)
 
 logger = logging.getLogger(__name__)
 
 SONY_ACCOUNT_URL = URL("https://ca.account.sony.com")
+
+# Concurrent 401s all trigger refresh; treat a refresh completed this
+# recently as still valid instead of hammering the token endpoint.
+REFRESH_DEBOUNCE_SECONDS = 30.0
 
 
 def npsso_from_end_uri(end_uri: str) -> Optional[str]:
@@ -64,6 +74,63 @@ class PSNAuthenticator:
         self._store_credentials = store_credentials_callback
         self._local_server = LocalAuthServer()
         self._stored_payload: Dict[str, Any] = {}
+        self._refresh_lock = asyncio.Lock()
+        self._last_refresh = 0.0
+        self._refresh_task: Optional[asyncio.Task] = None
+
+    async def refresh_access_token(self) -> bool:
+        """Renew the ~hourly access token; called by HttpClient on 401."""
+        # The NPSSO fallback below makes API calls that can themselves 401
+        # and re-enter this method from the same task; awaiting the held
+        # (non-reentrant) lock would deadlock the plugin. Bail out and let
+        # the auth flow's own fallbacks handle it.
+        if self._refresh_task is asyncio.current_task():
+            return False
+        async with self._refresh_lock:
+            if time.monotonic() - self._last_refresh < REFRESH_DEBOUNCE_SECONDS:
+                return True
+            self._refresh_task = asyncio.current_task()
+            try:
+                return await self._refresh_access_token_locked()
+            finally:
+                self._refresh_task = None
+
+    async def _refresh_access_token_locked(self) -> bool:
+        refresh_token = self._stored_payload.get("refresh_token")
+        if refresh_token:
+            try:
+                tokens = await refresh_oauth_tokens(self._http_client, refresh_token)
+                self._http_client.set_access_token(tokens["access_token"])
+                payload = dict(self._stored_payload)
+                payload["access_token"] = tokens.get("access_token")
+                if tokens.get("refresh_token"):
+                    payload["refresh_token"] = tokens["refresh_token"]
+                if tokens.get("id_token"):
+                    payload["id_token"] = tokens["id_token"]
+                self._persist_credentials(payload)
+                self._last_refresh = time.monotonic()
+                logger.info("Access token refreshed")
+                return True
+            except Exception:
+                logger.warning(
+                    "Refresh token grant failed; re-authenticating with NPSSO",
+                    exc_info=True,
+                )
+
+        npsso = (
+            self._stored_payload.get("npsso")
+            or (self._stored_payload.get("cookies") or {}).get("npsso")
+            or read_npsso_token_file()
+        )
+        if not npsso:
+            return False
+        try:
+            await self._authenticate_with_npsso(npsso)
+        except Exception:
+            logger.warning("NPSSO re-authentication failed", exc_info=True)
+            return False
+        self._last_refresh = time.monotonic()
+        return True
 
     def configure_cookie_persistence(self):
         self._http_client.set_cookies_updated_callback(self._on_cookies_updated)

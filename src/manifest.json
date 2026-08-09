@@ -2,7 +2,7 @@
     "name": "PlayStation Network",
     "platform": "psn",
     "guid": "38087aea-3c30-439f-867d-ddf9fae8fe6f",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "PlayStation Network library, game time, and trophy sync. Requires GOG Galaxy 2.1.3+ (not 2.0.x).",
     "author": "multimediality",
     "email": "",

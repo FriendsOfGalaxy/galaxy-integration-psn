@@ -64,6 +64,9 @@ class StubLibraryClient:
     async def get_psplus_status(self):
         return True
 
+    def flush_cache(self):
+        pass
+
 
 @pytest.mark.asyncio
 async def test_get_subscriptions_waits_for_in_flight_owned_games_import():
